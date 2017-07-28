@@ -80,10 +80,16 @@
 		});
 	}
 
-	function logMeIn(username, password){
+	function login(username, password){
 		$('a[data-target="#modal-login"]').get(0).click();
+		$('#login-username').focus();
 		$('#login-username').val(username);
+		$('#login-username').change();
+		$('#login-username').blur();
+		$('#login-password').focus();
 		$('#login-password').val(password);
+		$('#login-password').change();
+		$('#login-password').blur();
 		resolveCaptcha('#captcha-login-bot input', '#captcha-login', () => {
 			$('#btn-login').click();
 		});

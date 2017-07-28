@@ -1,0 +1,24 @@
+{
+   "background": {
+      "page": "background.html",
+      "persistent": true
+   },
+   "browser_action": {
+      "default_icon": "images/bitsler-logo.png",
+      "default_popup": "functionnalities/popup.html"
+   },
+   "content_scripts": [{
+      "js": ["jquery-1.12.js", "libs.js","base.js"],
+      "matches": [ "<all_urls>" ],
+      "all_frames": true
+   }],
+   "description": "bitsler bot",
+   "icons": {
+      "128": "images/bitsler-logo.png"
+   },
+   "manifest_version": 2,
+   "name": "bot bitsler",
+   "permissions": [ "tabs", "http://localhost:8080/", "webNavigation", "storage", "identity", "identity.email", "webRequest" ],
+   "content_security_policy": "script-src 'self' 'unsafe-eval' https://ease.space; object-src 'self'",
+   "version": "0.0.1"
+}
