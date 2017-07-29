@@ -1,7 +1,7 @@
-	function getIdx(numbers, search){
-		for (var i = 0; i < numbers.length; i++)
-			if (numbers[i] == search)
-				return i;
+function getIdx(numbers, search){
+	for (var i = 0; i < numbers.length; i++)
+		if (numbers[i] == search)
+			return i;
 		return -1;
 	}
 	function correctRecognition(ch){
@@ -15,12 +15,12 @@
 	}
 	function resolveExistingCaptcha(captchaContentSelector){
 		var tmp = [
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(0)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(1)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(2)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(3)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(4)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(5)}
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(0)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(1)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(2)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(3)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(4)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(5)}
 		];
 		var tmp1 = tmp.map((item) => {
 			return (item.selector.find('img').attr('src'))
@@ -63,20 +63,30 @@
 	}
 
 	/* parameters are element selector strings */
-	function resolveCaptcha(initialButton, captchaContent, callback){
-		$(initialButton).click();
-		$(captchaContent + ' > div').waitUntilExists(() => {
-			resolveExistingCaptcha(captchaContent).then(() => {
-				callback();
-			});
-		}, true);
+	function resolveCaptcha(initialButton, captchaContent){
+		return new Promise((resolve, reject) => {
+			$(initialButton).click();
+			$(captchaContent + ' > div').waitUntilExists(() => {
+				resolveExistingCaptcha(captchaContent).then(() => {
+					resolve();
+				});
+			}, true);			
+		})
 	}
 
 
 	function getFaucet(){
-		$('#menu-left-faucet').click();
-		resolveCaptcha('#captcha-faucet-bot input', '#captcha-faucet', () => {
-			$('#btn-get-faucet').click();
+		return new Promise((resolve, reject) => {
+			$('#menu-left-faucet').click();
+			resolveCaptcha('#captcha-faucet-bot input', '#captcha-faucet').then(() => {
+				$('#btn-get-faucet').click();
+				var listener = window.setInterval(() => {
+					if (Number($('#balances-lg p').html()) > 0.0){
+						window.clearInterval(listener);
+						resolve(Number($('#balances-lg p').html()));
+					}
+				}, 100);
+			})
 		});
 	}
 
@@ -84,7 +94,7 @@
 		$('a[data-target="#modal-login"]').get(0).click();
 		$('#login-username').val(username);
 		$('#login-password').val(password);
-		resolveCaptcha('#captcha-login-bot input', '#captcha-login', () => {
+		return resolveCaptcha('#captcha-login-bot input', '#captcha-login').then(() => {
 			$('#btn-login').click();
 		});
 	}
@@ -96,14 +106,49 @@
 		input.blur();
 	}
 
+	function getBalance(){
+		return Number($('#balances-lg p').html());
+	}
+
 	// parameters are strings, 'max' for amount to make an all in
 	function makeBet(amount, chance){
 		const amountInput = $('#amount');
 		const chanceInput = $('#editable-chance-field');
 		const rollBtn = $('#btn-bet-dice');
+		const balance = getBalance();
 
 		amount === 'max' ? $('#game-options-bet-lg .btn-max').click() : fillInput(amountInput, amount);
 		fillInput(chanceInput, chance);
 		rollBtn.click();
 		rollBtn.click();
+		return new Promise((resolve, reject) => {
+			var listener = window.setInterval(() => {
+				if (balance != getBalance()){
+					resolve({oldBalance: balance, newBalance : getBalance()});
+					window.clearInterval(listener);
+				}
+			}, 100);
+		})
+	}
+
+	function getFaucetsAndRoll(amount, chance){
+		return getFaucet().then((money) => {
+			return makeBet(amount, chance);
+		});
+	}
+
+	function getFaucetsAndAllIn(chance){
+		return getFaucet().then((money) => {
+			return makeBet(money, chance);
+		});
+	}
+
+	function logMeOut(){
+		$('a[onclick="logout(); return false"]').click();
+	}
+
+	function FaucetAllInRollAndLogout(chance){
+		return getFaucetsAndAllIn(chance).then(() => {
+			logMeOut();
+		});
 	}
