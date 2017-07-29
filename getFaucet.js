@@ -88,3 +88,22 @@
 			$('#btn-login').click();
 		});
 	}
+
+	function fillInput(input, value){
+		input.focus();
+		input.val(value);
+		input.change();
+		input.blur();
+	}
+
+	// parameters are strings, 'max' for amount to make an all in
+	function makeBet(amount, chance){
+		const amountInput = $('#amount');
+		const chanceInput = $('#editable-chance-field');
+		const rollBtn = $('#btn-bet-dice');
+
+		amount === 'max' ? $('#game-options-bet-lg .btn-max').click() : fillInput(amountInput, amount);
+		fillInput(chanceInput, chance);
+		rollBtn.click();
+		rollBtn.click();
+	}
