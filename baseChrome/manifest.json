@@ -9,7 +9,8 @@
    },
    "content_scripts": [{
       "js": ["jquery-1.12.js", "libs.js","base.js"],
-      "matches": [ "<all_urls>" ],
+      "css": ["styles.css"],
+      "matches": [ "https://www.bitsler.com/*" ],
       "all_frames": true
    }],
    "description": "bitsler bot",

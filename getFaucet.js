@@ -77,13 +77,17 @@ function getIdx(numbers, search){
 
 	function getFaucet(){
 		return new Promise((resolve, reject) => {
-			$('#menu-left-faucet').click();
+			$('#menu-left-faucet').get(0).click();
 			resolveCaptcha('#captcha-faucet-bot input', '#captcha-faucet').then(() => {
-				$('#btn-get-faucet').click();
+				if (getBalance() > 0.0){
+					reject('balance is not empty');
+					return;
+				}
+				$('#btn-get-faucet').get(0).click();
 				var listener = window.setInterval(() => {
-					if (Number($('#balances-lg p').html()) > 0.0){
+					if (getBalance() > 0.0){
 						window.clearInterval(listener);
-						resolve(Number($('#balances-lg p').html()));
+						resolve($('#balances-lg p').html());
 					}
 				}, 100);
 			})
@@ -100,9 +104,10 @@ function getIdx(numbers, search){
 	}
 
 	function fillInput(input, value){
-		input.focus();
-		input.val(value);
+		input.get(0).focus();
+		input.get(0).value = value;
 		input.change();
+		input.blur();
 		input.blur();
 	}
 
@@ -112,13 +117,15 @@ function getIdx(numbers, search){
 
 	// parameters are strings, 'max' for amount to make an all in
 	function makeBet(amount, chance){
-		const amountInput = $('#amount');
-		const chanceInput = $('#editable-chance-field');
 		const rollBtn = $('#btn-bet-dice');
 		const balance = getBalance();
 
-		amount === 'max' ? $('#game-options-bet-lg .btn-max').click() : fillInput(amountInput, amount);
-		fillInput(chanceInput, chance);
+		console.log('Making bet');
+		console.log('Amount : ', amount);
+		console.log('Chance : ', chance);
+		amount === 'max' ? $('#game-options-bet-lg .btn-max').get(0).click() : fillInput($('#amount'), amount);
+		$('#editable-chance').get(0).click();
+		fillInput($('#editable-chance-field'), chance);
 		rollBtn.click();
 		rollBtn.click();
 		return new Promise((resolve, reject) => {
@@ -134,17 +141,23 @@ function getIdx(numbers, search){
 	function getFaucetsAndRoll(amount, chance){
 		return getFaucet().then((money) => {
 			return makeBet(amount, chance);
+		}).catch((err) => {
+			console.log(err);
+			throw err;
 		});
 	}
 
 	function getFaucetsAndAllIn(chance){
 		return getFaucet().then((money) => {
 			return makeBet(money, chance);
+		}).catch((err) => {
+			console.log(err);
+			throw err;
 		});
 	}
 
 	function logMeOut(){
-		$('a[onclick="logout(); return false"]').click();
+		$('a[onclick="logout(); return false"]').get(0).click();
 	}
 
 	function FaucetAllInRollAndLogout(chance){

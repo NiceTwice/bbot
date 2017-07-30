@@ -1,0 +1,16 @@
+.my-button-set {
+	position: absolute;
+    height: auto;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+}
+
+.my-button-set button {
+	background: none;
+    border: none;
+    position: relative;
+    height: 50px;
+    width: 50px;
+}

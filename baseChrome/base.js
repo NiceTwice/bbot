@@ -1,7 +1,7 @@
-	function getIdx(numbers, search){
-		for (var i = 0; i < numbers.length; i++)
-			if (numbers[i] == search)
-				return i;
+function getIdx(numbers, search){
+	for (var i = 0; i < numbers.length; i++)
+		if (numbers[i] == search)
+			return i;
 		return -1;
 	}
 	function correctRecognition(ch){
@@ -15,12 +15,12 @@
 	}
 	function resolveExistingCaptcha(captchaContentSelector){
 		var tmp = [
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(0)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(1)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(2)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(3)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(4)},
-			{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(5)}
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(0)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(1)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(2)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(3)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(4)},
+		{selector: $(captchaContentSelector +' > div > div').eq(1).find('div').eq(5)}
 		];
 		var tmp1 = tmp.map((item) => {
 			return (item.selector.find('img').attr('src'))
@@ -63,34 +63,114 @@
 	}
 
 	/* parameters are element selector strings */
-	function resolveCaptcha(initialButton, captchaContent, callback){
-		$(initialButton).click();
-		$(captchaContent + ' > div').waitUntilExists(() => {
-			resolveExistingCaptcha(captchaContent).then(() => {
-				callback();
-			});
-		}, true);
+	function resolveCaptcha(initialButton, captchaContent){
+		return new Promise((resolve, reject) => {
+			$(initialButton).click();
+			$(captchaContent + ' > div').waitUntilExists(() => {
+				resolveExistingCaptcha(captchaContent).then(() => {
+					resolve();
+				});
+			}, true);			
+		})
 	}
 
 
 	function getFaucet(){
-		$('#menu-left-faucet').click();
-		resolveCaptcha('#captcha-faucet-bot input', '#captcha-faucet', () => {
-			$('#btn-get-faucet').click();
+		return new Promise((resolve, reject) => {
+			$('#menu-left-faucet').get(0).click();
+			resolveCaptcha('#captcha-faucet-bot input', '#captcha-faucet').then(() => {
+				if (getBalance() > 0.0){
+					reject('balance is not empty');
+					return;
+				}
+				$('#btn-get-faucet').get(0).click();
+				var listener = window.setInterval(() => {
+					if (getBalance() > 0.0){
+						window.clearInterval(listener);
+						resolve($('#balances-lg p').html());
+					}
+				}, 100);
+			})
 		});
 	}
 
-	function login(username, password){
+	function logMeIn(username, password){
 		$('a[data-target="#modal-login"]').get(0).click();
-		$('#login-username').focus();
 		$('#login-username').val(username);
-		$('#login-username').change();
-		$('#login-username').blur();
-		$('#login-password').focus();
 		$('#login-password').val(password);
-		$('#login-password').change();
-		$('#login-password').blur();
-		resolveCaptcha('#captcha-login-bot input', '#captcha-login', () => {
+		return resolveCaptcha('#captcha-login-bot input', '#captcha-login').then(() => {
 			$('#btn-login').click();
 		});
 	}
+
+	function fillInput(input, value){
+		input.get(0).focus();
+		input.get(0).value = value;
+		input.change();
+		input.blur();
+		input.blur();
+	}
+
+	function getBalance(){
+		return Number($('#balances-lg p').html());
+	}
+
+	// parameters are strings, 'max' for amount to make an all in
+	function makeBet(amount, chance){
+		const rollBtn = $('#btn-bet-dice');
+		const balance = getBalance();
+
+		console.log('Making bet');
+		console.log('Amount : ', amount);
+		console.log('Chance : ', chance);
+		amount === 'max' ? $('#game-options-bet-lg .btn-max').get(0).click() : fillInput($('#amount'), amount);
+		$('#editable-chance').get(0).click();
+		fillInput($('#editable-chance-field'), chance);
+		rollBtn.click();
+		rollBtn.click();
+		return new Promise((resolve, reject) => {
+			var listener = window.setInterval(() => {
+				if (balance != getBalance()){
+					resolve({oldBalance: balance, newBalance : getBalance()});
+					window.clearInterval(listener);
+				}
+			}, 100);
+		})
+	}
+
+	function getFaucetsAndRoll(amount, chance){
+		return getFaucet().then((money) => {
+			return makeBet(amount, chance);
+		}).catch((err) => {
+			console.log(err);
+			throw err;
+		});
+	}
+
+	function getFaucetsAndAllIn(chance){
+		return getFaucet().then((money) => {
+			return makeBet(money, chance);
+		}).catch((err) => {
+			console.log(err);
+			throw err;
+		});
+	}
+
+	function logMeOut(){
+		$('a[onclick="logout(); return false"]').get(0).click();
+	}
+
+	function FaucetAllInRollAndLogout(chance){
+		return getFaucetsAndAllIn(chance).then(() => {
+			logMeOut();
+		});
+	}
+
+	//extension stuff
+	$('#container').append('<div class="my-button-set"><button id="getFaucetAndRoll"><img src="https://image.flaticon.com/icons/svg/138/138281.svg"/></button><button id="logoutButton"><img src="https://image.flaticon.com/icons/svg/483/483343.svg"/></button></div>')
+	$('.my-button-set #getFaucetAndRoll').click((e) => {
+		getFaucetsAndAllIn('1.41');
+	});
+		$('.my-button-set #logoutButton').click((e) => {
+		logMeOut();
+	});
